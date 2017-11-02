@@ -1,0 +1,46 @@
+version: '3.2'
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper
+    ports:
+      - "2181:2181"
+    networks:
+      kafka_net:
+        ipv4_address: 10.0.1.10
+  kafka:
+    image: wurstmeister/kafka
+    ports:
+      - "9092:9092"
+    networks:
+      kafka_net:
+        ipv4_address: 10.0.1.20
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: 10.0.1.20
+      KAFKA_CREATE_TOPICS: "kafka_test:1:1:compact"
+      KAFKA_ZOOKEEPER_CONNECT: 10.0.1.10:2181
+      KAFKA_BROKER_ID: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+  test_comsumer:
+    build: 
+      context: ./kafka-test-consumer-swarm/
+    networks:
+      kafka_net:
+        ipv4_address: 10.0.1.30
+    volumes:
+      - ~/.m2:/root/.m2
+  test_producer:    
+    build:
+      context: ./kafka-test-producer-swarm/
+    networks:
+      kafka_net:
+        ipv4_address: 10.0.1.40
+    volumes:
+      - ~/.m2:/root/.m2
+networks:
+  kafka_net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.1.0/24
